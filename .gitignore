@@ -1,0 +1,7 @@
+*gguf_model*
+*lora_model*
+*package*
+*.txt
+*dataset*
+*unsloth*
+*.venv*
