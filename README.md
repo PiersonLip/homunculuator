@@ -1,4 +1,4 @@
-# PersonaBot
+# Homunculuator
 
 Fine-tune a local LLM on your Discord messages and deploy it as a bot that talks like you.
 
