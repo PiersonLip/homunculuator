@@ -5,3 +5,4 @@
 *dataset*
 *unsloth*
 *.venv*
+__pycache__
