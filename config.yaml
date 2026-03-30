@@ -1,0 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  PersonaBot Configuration
+#  Edit this file before running train.bat / start.bat
+# ─────────────────────────────────────────────────────────────────────────────
+
+discord:
+  # Your bot token from https://discord.com/developers/applications
+  token: "YOUR_DISCORD_BOT_TOKEN_HERE"
+
+persona:
+  # Your name — used in the system prompt and as the Ollama model name
+  name: "Pierson"
+
+training:
+  # Hugging Face model to fine-tune (don't change unless you know what you're doing)
+  base_model: "unsloth/Llama-3.2-3B-Instruct-bnb-4bit"
+  # Cap on training examples. More = slower but potentially better results.
+  max_examples: 50000
+  # Training passes over the data. 1 is usually enough for style learning.
+  epochs: 1
+
+# Advanced training settings — safe to leave as defaults
+advanced:
+  max_seq_length: 512
+  lora_rank: 16
+  batch_size: 4
+  gradient_accumulation: 4
+  learning_rate: 0.0002

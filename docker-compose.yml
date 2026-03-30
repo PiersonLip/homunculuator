@@ -1,0 +1,66 @@
+services:
+
+  # ── Ollama model server ───────────────────────────────────────────────────
+  # Runs always (both during training and when the bot is live).
+  # Automatically uses GPU if available via NVIDIA Container Toolkit.
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama   # persists downloaded/created models
+      - ./models:/models            # shared with trainer so it can register the GGUF
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ── Training pipeline ─────────────────────────────────────────────────────
+  # Started with:  docker compose --profile train up --build
+  # Runs once: extracts Discord data → cleans → builds dataset → fine-tunes
+  # → exports GGUF → registers model with Ollama. Then exits.
+  trainer:
+    build:
+      context: .
+      dockerfile: Dockerfile.train
+    volumes:
+      - ./data:/app/data:ro          # Discord export goes here (read-only)
+      - ./models:/app/models         # GGUF written here (shared with Ollama)
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    depends_on:
+      - ollama
+    profiles: [train]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ── Discord bot ───────────────────────────────────────────────────────────
+  # Started with:  docker compose --profile bot up -d
+  # Lightweight container — just Python + discord.py + requests.
+  # No GPU needed; inference is handled by the Ollama service.
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - ollama
+    profiles: [bot]
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

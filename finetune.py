@@ -1,42 +1,57 @@
 """
-Fine-tunes Llama 3.1 8B on Pierson's Discord messages using Unsloth + QLoRA.
-Outputs a merged model in GGUF format ready for Ollama.
-
-Requirements:
-    pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
-    pip install --no-deps trl peft accelerate bitsandbytes
+Fine-tunes a base model on Discord messages using Unsloth + QLoRA.
+Reads all settings from config.yaml.
+Outputs a merged GGUF model to /app/models/gguf/ (or ./models/gguf/).
 """
 
-from unsloth import FastLanguageModel
+import os
+from pathlib import Path
+
+import torch
+import yaml
+from datasets import load_dataset
 from trl import SFTTrainer
 from transformers import TrainingArguments
-from datasets import load_dataset
-import os
-import torch
+from unsloth import FastLanguageModel
 
-# Reduce memory fragmentation
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
-# ── Config ────────────────────────────────────────────────────────────────────
+def load_config() -> dict:
+    for p in [Path("/app/config.yaml"), Path("config.yaml")]:
+        if p.exists():
+            with open(p) as f:
+                return yaml.safe_load(f)
+    return {}
 
-MODEL_NAME   = "unsloth/Llama-3.2-3B-Instruct-bnb-4bit"
-OUTPUT_DIR   = "lora_model"
-GGUF_DIR     = "gguf_model"
 
-MAX_SEQ_LEN  = 512    # 3B fits fine; chat template adds ~80 token overhead
-LORA_RANK    = 16
-BATCH_SIZE   = 4
-GRAD_ACCUM   = 4      # effective batch = 16
-EPOCHS       = 1      # 1 pass over 50k examples is plenty for style learning
-MAX_SAMPLES  = 50_000 # cap training set; 280k × 3 epochs would take ~48hrs
-LR           = 2e-4
+config = load_config()
+
+training = config.get("training", {})
+advanced = config.get("advanced", {})
+
+MODEL_NAME = training.get("base_model", "unsloth/Llama-3.2-3B-Instruct-bnb-4bit")
+MAX_SAMPLES = training.get("max_examples", 50_000)
+EPOCHS = training.get("epochs", 1)
+
+MAX_SEQ_LEN = advanced.get("max_seq_length", 512)
+LORA_RANK = advanced.get("lora_rank", 16)
+BATCH_SIZE = advanced.get("batch_size", 4)
+GRAD_ACCUM = advanced.get("gradient_accumulation", 4)
+LR = advanced.get("learning_rate", 2e-4)
+
+# Output directories
+models_base = Path("/app/models") if Path("/app").exists() else Path("models")
+LORA_DIR = str(models_base / "lora")
+GGUF_DIR = str(models_base / "gguf")
+
+os.makedirs(LORA_DIR, exist_ok=True)
+os.makedirs(GGUF_DIR, exist_ok=True)
 
 # ── Load model ────────────────────────────────────────────────────────────────
 
 model, tokenizer = FastLanguageModel.from_pretrained(
     model_name=MODEL_NAME,
     max_seq_length=MAX_SEQ_LEN,
-    dtype=None,           # auto-detect
+    dtype=None,
     load_in_4bit=True,
 )
 
@@ -46,7 +61,7 @@ model = FastLanguageModel.get_peft_model(
     target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
                     "gate_proj", "up_proj", "down_proj"],
     lora_alpha=LORA_RANK,
-    lora_dropout=0,        # 0 lets Unsloth use fast kernel paths; saves VRAM
+    lora_dropout=0,
     bias="none",
     use_gradient_checkpointing="unsloth",
     random_state=42,
@@ -59,6 +74,7 @@ dataset = load_dataset("json", data_files={
     "validation": "dataset_eval.jsonl",
 })
 
+
 def format_example(example):
     return {
         "text": tokenizer.apply_chat_template(
@@ -68,17 +84,17 @@ def format_example(example):
         )
     }
 
+
 dataset = dataset.map(format_example)
 
-# Filter out examples that exceed MAX_SEQ_LEN after tokenization.
-# Unsloth's fused loss crashes on truncated sequences, so drop them instead.
+
 def within_length(example):
     length = tokenizer(example["text"], return_length=True)["length"][0]
     return length <= MAX_SEQ_LEN
 
-dataset = dataset.filter(within_length, num_proc=8)
 
-# Cap training set for speed
+dataset = dataset.filter(within_length, num_proc=4)
+
 if len(dataset["train"]) > MAX_SAMPLES:
     dataset["train"] = dataset["train"].shuffle(seed=42).select(range(MAX_SAMPLES))
 
@@ -92,7 +108,7 @@ trainer = SFTTrainer(
     dataset_text_field="text",
     max_seq_length=MAX_SEQ_LEN,
     args=TrainingArguments(
-        output_dir=OUTPUT_DIR,
+        output_dir=LORA_DIR,
         num_train_epochs=EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
         gradient_accumulation_steps=GRAD_ACCUM,
@@ -115,16 +131,14 @@ trainer = SFTTrainer(
 )
 
 trainer.train()
-trainer.save_model(OUTPUT_DIR)
+trainer.save_model(LORA_DIR)
 
 # ── Export to GGUF ────────────────────────────────────────────────────────────
 
-print("\nSaving merged GGUF model (Q4_K_M)...")
+print(f"\nExporting GGUF model (Q4_K_M) to {GGUF_DIR}...")
 model.save_pretrained_gguf(
     GGUF_DIR,
     tokenizer,
-    quantization_method="q4_k_m",  # good balance of size/quality
+    quantization_method="q4_k_m",
 )
 print(f"GGUF saved to: {GGUF_DIR}/")
-print("\nNext step — create the Ollama model:")
-print(f"  ollama create pierson -f {GGUF_DIR}/Modelfile")

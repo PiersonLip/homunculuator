@@ -1,8 +1,28 @@
-*gguf_model*
-*lora_model*
-*package*
-*.txt
-*dataset*
-*unsloth*
-*.venv*
-__pycache__
+# Discord data export
+data/*
+!data/.gitkeep
+
+# Trained models
+models/*
+!models/.gitkeep
+
+# Intermediate training files (generated, often large)
+all_messages.txt
+cleaned_messages.txt
+dataset_train.jsonl
+dataset_eval.jsonl
+
+# Legacy output directories (pre-Docker)
+lora_model/
+gguf_model/
+gguf_model_gguf/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+unsloth_compiled_cache/
+
+# Misc
+mise.toml
+package

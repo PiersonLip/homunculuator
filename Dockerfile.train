@@ -1,0 +1,40 @@
+FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# System deps
+RUN apt-get update && apt-get install -y \
+    python3.12 python3.12-dev python3-pip \
+    git curl build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    && update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1 \
+    && update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+
+WORKDIR /app
+
+# PyTorch (CUDA 12.4) — install first so unsloth picks it up
+RUN pip install --no-cache-dir \
+    torch==2.6.0 torchvision torchaudio \
+    --index-url https://download.pytorch.org/whl/cu124
+
+# Unsloth — installs fast kernels and LoRA utilities
+RUN pip install --no-cache-dir \
+    "unsloth @ git+https://github.com/unslothai/unsloth.git"
+
+# Core training stack
+RUN pip install --no-cache-dir \
+    transformers \
+    trl \
+    peft \
+    accelerate \
+    bitsandbytes \
+    datasets \
+    pyyaml \
+    requests \
+    gguf
+
+# Copy source files (config is volume-mounted at runtime)
+COPY pipeline.py extract_messages.py clean_messages.py prepare_dataset.py finetune.py ./
+
+CMD ["python", "pipeline.py"]
