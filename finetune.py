@@ -10,7 +10,8 @@ from pathlib import Path
 import torch
 import yaml
 from datasets import load_dataset
-from trl import SFTTrainer, SFTConfig
+from trl import SFTTrainer
+from transformers import TrainingArguments
 from unsloth import FastLanguageModel
 
 
@@ -53,10 +54,6 @@ model, tokenizer = FastLanguageModel.from_pretrained(
     dtype=None,
     load_in_4bit=True,
 )
-
-# Unsloth sets eos_token to "<EOS_TOKEN>" which isn't in the fast tokenizer vocab.
-# Reset to the actual Llama 3.2 EOS token so TRL's validation passes.
-tokenizer.eos_token = "<|eot_id|>"
 
 model = FastLanguageModel.get_peft_model(
     model,
@@ -105,17 +102,17 @@ if len(dataset["train"]) > MAX_SAMPLES:
 
 trainer = SFTTrainer(
     model=model,
-    processing_class=tokenizer,
+    tokenizer=tokenizer,
     train_dataset=dataset["train"],
     eval_dataset=dataset["validation"],
-    args=SFTConfig(
+    dataset_text_field="text",
+    max_seq_length=MAX_SEQ_LEN,
+    args=TrainingArguments(
         output_dir=LORA_DIR,
-        dataset_text_field="text",
-        eos_token=None,
         num_train_epochs=EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
         gradient_accumulation_steps=GRAD_ACCUM,
-        warmup_steps=100,
+        warmup_ratio=0.05,
         learning_rate=LR,
         fp16=not torch.cuda.is_bf16_supported(),
         bf16=torch.cuda.is_bf16_supported(),
