@@ -54,6 +54,10 @@ model, tokenizer = FastLanguageModel.from_pretrained(
     load_in_4bit=True,
 )
 
+# Unsloth sets eos_token to "<EOS_TOKEN>" which isn't in the fast tokenizer vocab.
+# Reset to the actual Llama 3.2 EOS token so TRL's validation passes.
+tokenizer.eos_token = "<|eot_id|>"
+
 model = FastLanguageModel.get_peft_model(
     model,
     r=LORA_RANK,
