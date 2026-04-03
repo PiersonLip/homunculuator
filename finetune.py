@@ -102,7 +102,7 @@ if len(dataset["train"]) > MAX_SAMPLES:
 
 trainer = SFTTrainer(
     model=model,
-    tokenizer=tokenizer,
+    processing_class=tokenizer,
     train_dataset=dataset["train"],
     eval_dataset=dataset["validation"],
     dataset_text_field="text",
@@ -112,7 +112,7 @@ trainer = SFTTrainer(
         num_train_epochs=EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
         gradient_accumulation_steps=GRAD_ACCUM,
-        warmup_ratio=0.05,
+        warmup_steps=100,
         learning_rate=LR,
         fp16=not torch.cuda.is_bf16_supported(),
         bf16=torch.cuda.is_bf16_supported(),
