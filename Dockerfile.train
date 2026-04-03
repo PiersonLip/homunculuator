@@ -23,7 +23,8 @@ RUN pip install --no-cache-dir \
     --index-url https://download.pytorch.org/whl/cu124
 
 # Unsloth — installs fast kernels and LoRA utilities
-RUN pip install --no-cache-dir \
+RUN pip install --no-cache-dir unsloth_zoo && \
+    pip install --no-cache-dir \
     "unsloth @ git+https://github.com/unslothai/unsloth.git"
 
 # Core training stack
