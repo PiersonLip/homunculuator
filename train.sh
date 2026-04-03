@@ -2,7 +2,7 @@
 set -e
 
 echo "============================================================"
-echo " PersonaBot - Training Pipeline"
+echo " Homunculator - Training Pipeline"
 echo "============================================================"
 echo ""
 echo "Training will take 30-90 minutes with a GPU."

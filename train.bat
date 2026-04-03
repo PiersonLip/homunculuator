@@ -1,6 +1,6 @@
 @echo off
 echo ============================================================
-echo  PersonaBot - Training Pipeline
+echo  Homunculator - Training Pipeline
 echo ============================================================
 echo.
 echo Requirements:

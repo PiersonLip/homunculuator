@@ -25,9 +25,18 @@ def load_config() -> dict:
     return {}
 
 
-config = load_config()
+def load_secrets() -> dict:
+    for p in [Path("/app/secrets.yaml"), Path("secrets.yaml")]:
+        if p.exists():
+            with open(p) as f:
+                return yaml.safe_load(f)
+    return {}
 
-DISCORD_TOKEN = config.get("discord", {}).get("token", "")
+
+config = load_config()
+secrets = load_secrets()
+
+DISCORD_TOKEN = secrets.get("discord", {}).get("token") or config.get("discord", {}).get("token", "")
 PERSONA_NAME = config.get("persona", {}).get("name", "Pierson")
 HISTORY_LIMIT = 10  # conversation turns remembered per channel
 

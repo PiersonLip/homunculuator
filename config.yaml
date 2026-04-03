@@ -1,15 +1,15 @@
 # ─────────────────────────────────────────────────────────────────────────────
-#  PersonaBot Configuration
+#  Homunculator Configuration
 #  Edit this file before running train.bat / start.bat
 # ─────────────────────────────────────────────────────────────────────────────
 
 discord:
   # Your bot token from https://discord.com/developers/applications
-  token: "YOUR_DISCORD_BOT_TOKEN_HERE"
+  token: "YOUR_DISCORD_BOT_TOKEN_HERE"  # or put your token in secrets.yaml instead
 
 persona:
   # Your name — used in the system prompt and as the Ollama model name
-  name: "Pierson"
+  name: "Mascis"
 
 training:
   # Hugging Face model to fine-tune (don't change unless you know what you're doing)

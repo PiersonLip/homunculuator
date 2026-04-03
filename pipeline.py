@@ -114,7 +114,7 @@ def main():
     (models_dir / "gguf").mkdir(exist_ok=True)
 
     print("\n" + "="*60)
-    print("  PersonaBot Training Pipeline")
+    print("  Homunculator Training Pipeline")
     print("="*60)
     print(f"  Persona:  {persona_name}")
     print(f"  Model:    {model_name}")

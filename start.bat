@@ -1,6 +1,6 @@
 @echo off
 echo ============================================================
-echo  PersonaBot - Starting Discord Bot
+echo  Homunculator - Starting Discord Bot
 echo ============================================================
 echo.
 echo Requirements:
