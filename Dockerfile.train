@@ -27,12 +27,12 @@ RUN pip install --no-cache-dir unsloth_zoo && \
     pip install --no-cache-dir \
     "unsloth @ git+https://github.com/unslothai/unsloth.git"
 
-# Core training stack — pinned for compatibility with torch 2.6.0
+# Core training stack
 RUN pip install --no-cache-dir \
-    "transformers==4.47.1" \
-    "trl==0.12.2" \
-    "peft==0.14.0" \
-    "accelerate==1.2.1" \
+    transformers \
+    trl \
+    peft \
+    accelerate \
     bitsandbytes \
     datasets \
     pyyaml \
