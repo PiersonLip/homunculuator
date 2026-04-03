@@ -10,8 +10,7 @@ from pathlib import Path
 import torch
 import yaml
 from datasets import load_dataset
-from trl import SFTTrainer
-from transformers import TrainingArguments
+from trl import SFTTrainer, SFTConfig
 from unsloth import FastLanguageModel
 
 
@@ -105,10 +104,10 @@ trainer = SFTTrainer(
     processing_class=tokenizer,
     train_dataset=dataset["train"],
     eval_dataset=dataset["validation"],
-    dataset_text_field="text",
-    max_seq_length=MAX_SEQ_LEN,
-    args=TrainingArguments(
+    args=SFTConfig(
         output_dir=LORA_DIR,
+        dataset_text_field="text",
+        max_seq_length=MAX_SEQ_LEN,
         num_train_epochs=EPOCHS,
         per_device_train_batch_size=BATCH_SIZE,
         gradient_accumulation_steps=GRAD_ACCUM,
