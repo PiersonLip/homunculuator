@@ -1,6 +1,6 @@
 # Homunculuator
 
-Fine-tune a local LLM on your Discord messages and deploy it as a bot that talks like you.
+Fine-tune a local LLM on your Discord messages and deploy it as a bot that talks like you. Yes, it's as horrible of an idea as it sounds.
 
 **How it works:** Your Discord data export is processed into a training dataset, used to fine-tune Llama 3.2 3B with QLoRA, exported as a GGUF model, and served via Ollama. The Discord bot responds to @mentions using that model.
 
